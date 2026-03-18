@@ -1,0 +1,24 @@
+# Training and inference configuration for the ABSA pipeline
+
+# BERT backbone
+bert_checkpoint: "bert-base-uncased"
+
+# Optimizer
+learning_rate: 2.0e-5
+
+# Training loop
+batch_size: 32
+num_epochs: 10
+dropout_rate: 0.1
+max_seq_length: 512
+
+# Dataset splits (must sum to 1.0)
+train_split: 0.8
+val_split: 0.1
+test_split: 0.1
+
+# Inference
+confidence_threshold: 0.5
+
+# Reproducibility
+random_seed: 42
