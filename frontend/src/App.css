@@ -1,0 +1,17 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0f172a;
+}
+
+textarea:focus {
+  outline: 1px solid #3b82f6;
+}
+
+button:hover:not(:disabled) {
+  background: #2563eb !important;
+}
