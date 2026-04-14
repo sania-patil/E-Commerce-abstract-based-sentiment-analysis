@@ -183,6 +183,7 @@ class TrainingOrchestrator:
             lr=cfg.learning_rate,
         )
 
+        # Class weights computed dynamically after dataset is loaded (see train())
         self.bio_loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
         self.sentiment_loss_fn = nn.CrossEntropyLoss()
 
@@ -208,6 +209,26 @@ class TrainingOrchestrator:
         train_ds = ABSADataset(splits.train, self.tokenizer, self.cfg.max_seq_length)
         val_ds = ABSADataset(splits.val, self.tokenizer, self.cfg.max_seq_length)
         test_ds = ABSADataset(splits.test, self.tokenizer, self.cfg.max_seq_length)
+
+        # Compute dynamic class weights from training data
+        # Formula: weight[c] = total_tokens / (num_classes * count[c])
+        # Rare classes (B-ASP, I-ASP) get higher weights, frequent O gets lower
+        bio_counts = [0, 0, 0]  # [O, B-ASP, I-ASP]
+        for ex in train_ds.examples:
+            for tag in ex["bio_tags"]:
+                if 0 <= tag < 3:
+                    bio_counts[tag] += 1
+        total = sum(bio_counts)
+        bio_weights = [
+            total / (3 * c) if c > 0 else 1.0
+            for c in bio_counts
+        ]
+        bio_weight_tensor = torch.tensor(bio_weights, dtype=torch.float, device=self.device)
+        self.bio_loss_fn = nn.CrossEntropyLoss(ignore_index=-100, weight=bio_weight_tensor)
+        logger.info(
+            "BIO class weights — O: %.3f | B-ASP: %.3f | I-ASP: %.3f",
+            bio_weights[0], bio_weights[1], bio_weights[2],
+        )
 
         train_loader = DataLoader(train_ds, batch_size=self.cfg.batch_size,
                                   shuffle=True, collate_fn=collate_fn)

@@ -1,3 +1,12 @@
+# xml_loader.py  →  creates a RawRecord  →  passes it to preprocessor.py
+# preprocessor.py  →  returns cleaned text  →  passes it to tokenizer.py
+# tokenizer.py  →  creates a TokenizerOutput  →  passes it to encoder
+# encoder  →  creates embeddings  →  passes to aspect_extractor.py
+# aspect_extractor.py + sentiment_classifier.py  →  creates AspectSentimentPair  →  passes to summarizer
+# summarizer  →  creates OpinionSummary  →  final output shown to user
+
+
+
 """
 Data models for the ABSA pipeline.
 These are in-memory containers that hold data as it flows between pipeline stages.

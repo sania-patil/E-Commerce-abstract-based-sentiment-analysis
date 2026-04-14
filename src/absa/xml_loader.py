@@ -17,8 +17,16 @@ SemEval-2014 XML structure:
 """
 
 import logging
+import re
+
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+try:
+    from lxml import etree as lxml_etree
+    _LXML_AVAILABLE = True
+except ImportError:
+    _LXML_AVAILABLE = False
 
 from absa.models import AnnotatedAspect, RawRecord
 
@@ -47,13 +55,27 @@ def load(file_path: str | Path) -> list[RawRecord]:
         raise FileNotFoundError(f"Dataset file not found: {file_path}")
 
     try:
-        tree = ET.parse(file_path)
+        raw_bytes = file_path.read_bytes()
+        if _LXML_AVAILABLE:
+            # lxml recovery mode handles malformed XML (unescaped quotes, etc.)
+            parser = lxml_etree.XMLParser(recover=True, encoding="utf-8")
+            lxml_root = lxml_etree.fromstring(raw_bytes, parser=parser)
+            # Convert lxml tree to stdlib ET for compatibility
+            raw_str = lxml_etree.tostring(lxml_root, encoding="unicode")
+            root = ET.fromstring(raw_str)
+            tree = ET.ElementTree(root)
+        else:
+            raw = raw_bytes.decode("utf-8", errors="replace")
+            raw = raw.replace("\u201c", '"').replace("\u201d", '"')
+            raw = raw.replace("\u2018", "'").replace("\u2019", "'")
+            raw = raw.replace("\u2013", "-").replace("\u2014", "-")
+            raw = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", raw)
+            tree = ET.ElementTree(ET.fromstring(raw))
     except ET.ParseError as e:
         raise ET.ParseError(f"Failed to parse XML file '{file_path}': {e}") from e
 
     root = tree.getroot()
     records: list[RawRecord] = []
-
     for sentence_elem in root.findall("sentence"):
         record = _parse_sentence(sentence_elem, file_path.name)
         if record is not None:

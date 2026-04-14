@@ -8,6 +8,7 @@ src/absa/encoder.py
 src/absa/models.py
 src/absa/opinion_summarizer.py
 src/absa/pair_builder.py
+src/absa/pipeline.py
 src/absa/preprocessor.py
 src/absa/sentiment_classifier.py
 src/absa/serializer.py
